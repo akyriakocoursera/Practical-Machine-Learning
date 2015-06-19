@@ -1,0 +1,121 @@
+---
+title: "Weight Lifting Exercise Predictions"
+author: "Kyriakos Akriotis"
+date: "Friday, June 19, 2015"
+output: html_document
+---
+
+##Overview
+
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement - a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://groupware.les.inf.puc-rio.br/har 
+
+The Human Activity Recognition(HAR) dataset was generously provided by Groupware@LES.
+
+##Data Processing
+
+### Load Data
+
+```{r}
+library(caret)
+library(randomForest)
+library(doParallel)
+
+set.seed(1978)
+```
+
+
+```{r}
+trainingRaw = read.csv("pml-training.csv", na.strings = c("NA", ""))
+testingRaw = read.csv("pml-training.csv", na.strings = c("NA", ""))
+
+trainingRaw$classe <- as.factor(trainingRaw$classe) 
+```
+
+### Partition Data
+
+We are slicing the original training set in two partitions. One that will be our training sample (70%) and a testing sample(20%) which we are going to use for validating our model.
+
+```{r}
+partition = createDataPartition(y=trainingRaw$classe, p=0.7, list=FALSE)
+training_partition = trainingRaw[partition,]
+testing_partition = trainingRaw[-partition,]
+```
+
+### Clean Data
+
+The samples columns are full of NA values which have nothing to contribute to our further processing and modelling. So we are going to remove all those columns both in training and testing samples. 
+
+```{r}
+
+na_test = sapply(training_partition, function(x) {sum(is.na(x))})
+table(na_test)
+
+unwanted_columns = names(na_test[na_test==13452])
+training_partition = training_partition[, !names(training_partition) %in% unwanted_columns]
+dim(training_partition)
+
+na_test2 = sapply(testing_partition, function(x) {sum(is.na(x))})
+table(na_test2)
+
+unwanted_columns2 = names(na_test[na_test2==5764])
+testing_partition = testing_partition[, !names(testing_partition) %in% unwanted_columns2]
+dim(testing_partition)
+
+na_test3 = sapply(testingRaw, function(x) {sum(is.na(x))})
+table(na_test3)
+
+unwanted_columns2 = names(na_test[na_test3==19216])
+testingRaw = testingRaw[, !names(testingRaw) %in% unwanted_columns2]
+
+classes <- training_partition$classe
+
+
+```
+
+Additionally we are going to remove columns 1:7 from both samples as they are no numeric columns and cannot contribute to modelling.
+
+```{r}
+
+training_partition = training_partition[,-c(1:7)]
+testing_partition = testing_partition[,-c(1:7)]
+
+```
+
+### Fitting
+
+We are going to employ a Parallel Random Forest algorithm for fitting our model.
+
+```{r}
+
+registerDoParallel()
+model <- train(training_partition, classes, method="parRF", tuneGrid=data.frame(mtry=3), trControl=trainControl(method="none"))
+
+```
+
+Random Forest do not need an additional post cross-validation as it is precalculated within the fitting process itself.
+
+```{r}
+
+training_prediction <- predict(model, newdata=training_partition)
+confusion_trd <- confusionMatrix(training_prediction,training_partition$classe)
+confusion_trd
+```
+
+```{r}
+
+testing_prediction <- predict(model, newdata=testing_partition)
+confusion_tsd <- confusionMatrix(testing_prediction,testing_partition$classe)
+confusion_tsd
+```
+
+## Results
+
+```{r}
+confusion_trd$overall[1]
+```
+
+```{r}
+confusion_tsd$overall[1]
+```
+
+So the estimated accuracy of the model is 99,93% and the estimated out of sample error is 0,07%.
