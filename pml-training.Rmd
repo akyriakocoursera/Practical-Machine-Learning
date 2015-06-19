@@ -33,7 +33,7 @@ trainingRaw$classe <- as.factor(trainingRaw$classe)
 
 ### Partition Data
 
-We are slicing the original training set in two partitions. One that will be our training sample (70%) and a testing sample(20%) which we are going to use for validating our model.
+We are slicing the original training set in two partitions. One that will be our training sample (70%) and a testing sample(30%) which we are going to use for validating our model.
 
 ```{r}
 partition = createDataPartition(y=trainingRaw$classe, p=0.7, list=FALSE)

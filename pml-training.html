@@ -94,7 +94,7 @@ trainingRaw$classe &lt;- as.factor(trainingRaw$classe) </code></pre>
 </div>
 <div id="partition-data" class="section level3">
 <h3>Partition Data</h3>
-<p>We are slicing the original training set in two partitions. One that will be our training sample (70%) and a testing sample(20%) which we are going to use for validating our model.</p>
+<p>We are slicing the original training set in two partitions. One that will be our training sample (70%) and a testing sample(30%) which we are going to use for validating our model.</p>
 <pre class="r"><code>partition = createDataPartition(y=trainingRaw$classe, p=0.7, list=FALSE)
 training_partition = trainingRaw[partition,]
 testing_partition = trainingRaw[-partition,]</code></pre>
